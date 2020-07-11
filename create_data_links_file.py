@@ -14,7 +14,7 @@ def create_links():
 
     with open(config.data.links_file, 'w+') as links_file:
         for full_path in full_path_list:
-            links_file.write(full_path)
+            links_file.write(f"{full_path}\n")
 
 
 if __name__ == "__main__":
