@@ -17,5 +17,16 @@ def create_links():
             links_file.write(f"{full_path}\n")
 
 
+def read_links_file_to_list():
+    config = ConfigProvider.config()
+    links_file_path = config.data.links_file
+    if not os.path.isfile(links_file_path):
+        raise RuntimeError("did you forget to create a file with links to images? Try using 'create_links()'")
+    with open(links_file_path, 'r') as links_file:
+        return links_file.readlines()
+
+
 if __name__ == "__main__":
     create_links()
+    for filename in read_links_file_to_list():
+        print(filename)
