@@ -8,8 +8,9 @@ import os
 class AutoEncoder(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
+        self._input_shape = kwargs["input_shape"]
         self.encoder_hidden_layer = nn.Linear(
-            in_features=kwargs["input_shape"], out_features=128)
+            in_features=self._input_shape, out_features=128)
         self.encoder_output_layer = nn.Linear(in_features=128, out_features=128)
         self.decoder_hidden_layer = nn.Linear(in_features=128, out_features=128)
         self.decoder_output_layer = nn.Linear(in_features=128, out_features=kwargs["input_shape"])
@@ -28,7 +29,7 @@ class AutoEncoder(nn.Module):
     def check_mnist(self):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(device)
-        model = AutoEncoder(input_shape=784).to(device)
+        model = AutoEncoder(input_shape=self._input_shape).to(device)
         optimizer = optim.Adam(model.parameters(), lr=1e-3)
         criterion = nn.MSELoss()
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
@@ -79,5 +80,5 @@ class AutoEncoder(nn.Module):
 
 
 if __name__ == "__main__":
-    ae = AutoEncoder()
+    ae = AutoEncoder(input_shape=784)
     ae.check_mnist()
