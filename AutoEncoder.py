@@ -8,12 +8,20 @@ import os
 class AutoEncoder(nn.Module):
     def __init__(self, **kwargs):
         super().__init__()
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(self._device)
         self._input_shape = kwargs["input_shape"]
         self.encoder_hidden_layer = nn.Linear(
             in_features=self._input_shape, out_features=128)
         self.encoder_output_layer = nn.Linear(in_features=128, out_features=128)
         self.decoder_hidden_layer = nn.Linear(in_features=128, out_features=128)
         self.decoder_output_layer = nn.Linear(in_features=128, out_features=kwargs["input_shape"])
+
+        self._criterion = nn.MSELoss()
+
+        self._loss = 0
+        self._path_to_snapshots = "./weights"
+        assert os.path.isdir(self._path_to_snapshots)
 
     def forward(self, features):
         activation = self.encoder_hidden_layer(features)
@@ -27,11 +35,9 @@ class AutoEncoder(nn.Module):
         return reconstructed
 
     def check_mnist(self):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(device)
-        model = AutoEncoder(input_shape=self._input_shape).to(device)
+        model = AutoEncoder(input_shape=self._input_shape).to(self._device)
         optimizer = optim.Adam(model.parameters(), lr=1e-3)
-        criterion = nn.MSELoss()
+
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
         train_dataset = torchvision.datasets.MNIST(root="~/torch_datasets", train=True, transform=transform, download=True)
@@ -43,39 +49,35 @@ class AutoEncoder(nn.Module):
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=4)
 
         n_epochs = 20
-        generic_path_to_epoch_weights = "./weights"
-        assert os.path.isdir(generic_path_to_epoch_weights)
         for epoch in range(n_epochs):
-            path_to_weights_file = os.path.join(generic_path_to_epoch_weights, str(epoch) + ".weights")
-            loss = 0
-            for batch_features, _ in train_loader:
-                loss = self._train(batch_features, criterion, device, loss, model, optimizer)
-
-
-            # compute the epoch training loss
-            loss = loss / len(train_loader)
-            torch.save(model.state_dict(), path_to_weights_file)
+            self._loss = self._train(epoch, train_loader, model, optimizer)
 
             # display the epoch training loss
-            print("epoch : {}/{}, loss = {:.6f}".format(epoch + 1, n_epochs, loss))
+            print("epoch : {}/{}, loss = {:.6f}".format(epoch + 1, n_epochs, self._loss))
 
-    def _train(self, batch_features, criterion, device, loss, model, optimizer):
-        # reshape mini-batch data to [N, 784] matrix
-        # load it to the active device
-        batch_features = batch_features.view(-1, 784).to(device)
-        # reset the gradients back to zero
-        # PyTorch accumulates gradients on subsequent backward passes
-        optimizer.zero_grad()
-        # compute reconstructions
-        outputs = model(batch_features)
-        # compute training reconstruction loss
-        train_loss = criterion(outputs, batch_features)
-        # compute accumulated gradients
-        train_loss.backward()
-        # perform parameter update based on current gradients
-        optimizer.step()
-        # add the mini-batch training loss to epoch loss
-        loss += train_loss.item()
+    def _train(self, epoch, train_loader, model, optimizer):
+        path_to_weights_file = os.path.join(self._path_to_snapshots, str(epoch) + ".weights")
+        loss = 0
+        for batch_features, _ in train_loader:
+            # reshape mini-batch data to [N, 784] matrix
+            # load it to the active device
+            batch_features = batch_features.view(-1, 784).to(self._device)
+            # reset the gradients back to zero
+            # PyTorch accumulates gradients on subsequent backward passes
+            optimizer.zero_grad()
+            # compute reconstructions
+            outputs = model(batch_features)
+            # compute training reconstruction loss
+            train_loss = self._criterion(outputs, batch_features)
+            # compute accumulated gradients
+            train_loss.backward()
+            # perform parameter update based on current gradients
+            optimizer.step()
+            # add the mini-batch training loss to epoch loss
+            loss += train_loss.item()
+        loss = loss / len(train_loader)
+
+        torch.save(model.state_dict(), path_to_weights_file)
         return loss
 
 
