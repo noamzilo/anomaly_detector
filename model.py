@@ -4,7 +4,7 @@ import matplotlib
 import pandas as pd
 from pyod.models.knn import KNN
 from pyod.models.auto_encoder import AutoEncoder
-from pyod.models.
+# from pyod.models.
 from pyod.utils.data import generate_data
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -26,7 +26,7 @@ def main():
     n_features = 25  # Number of features
 
     X_test, y_test, X_train, y_train = _generate_random_data(contamination, n_features, n_test, n_train)
-    X_test, y_test, X_train, y_train = ?
+    # X_test, y_test, X_train, y_train = ?
 
     _plot_using_pca(X_train, y_train)
 
