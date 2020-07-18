@@ -35,8 +35,8 @@ class AutoEncoder(nn.Module):
         return reconstructed
 
     def check_mnist(self):
-        model = AutoEncoder(input_shape=self._input_shape).to(self._device)
-        optimizer = optim.Adam(model.parameters(), lr=1e-3)
+        model = self.to(self._device)
+        optimizer = optim.Adam(self.parameters(), lr=1e-3)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
@@ -50,12 +50,12 @@ class AutoEncoder(nn.Module):
 
         n_epochs = 20
         for epoch in range(n_epochs):
-            self._loss = self._train(epoch, train_loader, model, optimizer)
+            self._loss = self._train(model, epoch, train_loader, optimizer)
 
             # display the epoch training loss
             print("epoch : {}/{}, loss = {:.6f}".format(epoch + 1, n_epochs, self._loss))
 
-    def _train(self, epoch, train_loader, model, optimizer):
+    def _train(self, model, epoch, train_loader, optimizer):
         path_to_weights_file = os.path.join(self._path_to_snapshots, str(epoch) + ".weights")
         loss = 0
         for batch_features, _ in train_loader:
